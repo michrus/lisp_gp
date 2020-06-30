@@ -41,7 +41,8 @@
 (define functions '(+ - * /))
 (define min-sub-elements 2)
 (define max-sub-elements 4)
-(define sub-probability 0.5)
+(define sub-probability 0.2)
+(define population-size 5)
 
 ; ------ PROGRAM GENERATION ------
 
@@ -66,6 +67,15 @@
          )
      )
   )
+)
+
+(define (get-population)
+  (let f ([result '()] [i population-size])
+    (if (zero? i)
+        result
+        (f (append result (list (get-random-program))) (- i 1))
+        )
+   )
 )
 
 ; ------ PROGRAM MODIFICATION ------
