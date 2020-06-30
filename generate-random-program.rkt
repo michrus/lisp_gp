@@ -32,7 +32,12 @@
 ;     lst    - list
 ;     n      - index of element
 (define (list-reverse-tail lst n)
-  (reverse (list-tail (reverse lst) (- n 1)))
+  (cond
+    [(zero? n) lst]
+    [(= n (- (length lst) 1)) (list (rcar lst))]
+    [(>= (length lst)) '()]
+    [else (reverse (list-tail (reverse lst) (- n 1)))]
+  )
 )
 
 ; reverse cdr - returns list without last element
@@ -40,8 +45,14 @@
   (reverse (cdr (reverse lst)))
 )
 
+; reverse car - returns last element of list
+(define (rcar lst)
+  (car (reverse lst))
+)
+
+
 ; inserts element into a list at a specified position
-(define (list-insert element lst n)
+(define (list-insert lst element n)
   (append (rcdr (list-reverse-tail lst n))
           element
           (cdr (list-tail lst n))
@@ -102,6 +113,8 @@
 ; ------ PROGRAM MODIFICATION ------
 ; Crossovers, mutations
 
-;(define (mutate program element-index)
-;  
-;  )
+(define (mutate program)
+  (list-insert program
+               (get-random-program)
+               (random 0 (+ (length program) 1)))
+  )
