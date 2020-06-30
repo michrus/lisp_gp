@@ -1,5 +1,7 @@
 #lang scheme
 
+; ------ HELPER FUCTIONS ------
+
 ; gets random element from list provided as argument
 ; args:
 ;     elements    - list of elements to be randomly chosen from
@@ -25,52 +27,46 @@
     )
   )
 
+; ------ GLOBAL CONSTS ------
+; input consts
+(define inputs-count 2)
+(define input-symbols (get-input-symbol-list inputs-count))
+
+; terminator generation consts
+(define terminator-random-min 1)
+(define terminator-random-max 10)
+(define terminator-const-probability 0.5)
+
+; program generation consts
+(define functions '(+ - * /))
+(define min-sub-elements 2)
+(define max-sub-elements 4)
+(define sub-probability 0.5)
+
+; ------ PROGRAM GENERATION ------
+
 ; returns terminator element for program tree - either input variable or random constant
-; args:
-;     input-symbols        - list of symbols for input variables
-;     const-min            - minimal value for random constant
-;     const-max            - maximal value for random constant
-;     const-probability    - probability of picking random constant [default: 0.5]
-(define (get-terminator input-symbols const-min const-max [const-probability 0.5])
-  (if (<= (random) const-probability)
-      (+ (random const-min const-max) (random))
+(define (get-terminator)
+  (if (<= (random) terminator-const-probability)
+      (+ (random terminator-random-min terminator-random-max) (random))
       (get-random-element input-symbols)
    )
   )
 
 ; generate random program tree
-; args:
-;     functions        - list of function symbols to construct program from
-;     input-symbols    - list of symbols for input variables
-;     const-min        - minimal value for random constant (for get-terminator)
-;     const-max        - maximal value for random constant (for get-terminator)
-;     min-sub-elements - minimal number of elements in each sub-tree
-;     max-sub-elements - maximal number of elements in each sub-tree
-;     sub-probability  - probability of generating sub-program instead of pcking terminator
-(define (get-random-program
-         functions
-         input-symbols
-         const-min
-         const-max
-         min-sub-elements
-         max-sub-elements
-         sub-probability)
+(define (get-random-program)
   (append (list (get-random-element functions))
    (let random-element ([program '()] [i (random min-sub-elements max-sub-elements)])
-     (if (< i 0)
+     (if (zero? i)
          program
          (if (<= (random) sub-probability)
-             (append program (list (get-random-program
-                                    functions
-                                    input-symbols
-                                    const-min
-                                    const-max
-                                    min-sub-elements
-                                    max-sub-elements
-                                    sub-probability)))
-             (random-element (append program (list (get-terminator input-symbols const-min const-max))) (- i 1))
+             (append program (list (get-random-program)))
+             (random-element (append program (list (get-terminator))) (- i 1))
              )
          )
      )
   )
 )
+
+; ------ PROGRAM MODIFICATION ------
+; Crossovers, mutations
