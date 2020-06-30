@@ -27,6 +27,27 @@
     )
   )
 
+; returns part of the list from first element to the specified element (including)
+; args:
+;     lst    - list
+;     n      - index of element
+(define (list-reverse-tail lst n)
+  (reverse (list-tail (reverse lst) (- n 1)))
+)
+
+; reverse cdr - returns list without last element
+(define (rcdr lst)
+  (reverse (cdr (reverse lst)))
+)
+
+; inserts element into a list at a specified position
+(define (list-insert element lst n)
+  (append (rcdr (list-reverse-tail lst n))
+          element
+          (cdr (list-tail lst n))
+  )
+)
+
 ; ------ GLOBAL CONSTS ------
 ; input consts
 (define inputs-count 2)
@@ -80,3 +101,7 @@
 
 ; ------ PROGRAM MODIFICATION ------
 ; Crossovers, mutations
+
+;(define (mutate program element-index)
+;  
+;  )
