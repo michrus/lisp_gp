@@ -143,6 +143,9 @@
     )
   )
 
+; mutate program, by picking random terminator and replacing it by new random terminator
+; args:
+;     program    - program list
 (define (mutate-terminator program)
   (let f ([subtree program])
     (let ([mutation-point (random 1 (length subtree))])
@@ -164,6 +167,10 @@
     )
   )
 
+; mutate program using mutation procedure of choice
+; args:
+;     program                - program list
+;     [mutation-procedure]   - procedure used for mutation (default: take from global constant)
 (define (mutate program [mutation-procedure (eval default-mutation-type)])
   (mutation-procedure program)
   )
