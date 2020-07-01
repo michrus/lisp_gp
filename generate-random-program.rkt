@@ -80,6 +80,9 @@
 (define sub-probability 0.2)
 (define population-size 5)
 
+; mutation consts
+(define default-mutation-type 'mutate-terminator)
+
 ; ------ PROGRAM GENERATION ------
 
 ; returns terminator element for program tree - either input variable or random constant
@@ -142,4 +145,8 @@
           )
       )
     )
+  )
+
+(define (mutate program [mutation-procedure (eval default-mutation-type)])
+  (mutation-procedure program)
   )
