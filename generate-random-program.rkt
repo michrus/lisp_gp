@@ -4,9 +4,11 @@
 
 ; gets random element from list provided as argument
 ; args:
-;     elements    - list of elements to be randomly chosen from
-(define (get-random-element elements)
-  (list-ref elements (random 0 (length elements))))
+;     elements        - list of elements to be randomly chosen from
+;     [start-index]   - lower bound index for random picking (default: 0)
+;     [start-index]   - upper bound index for random picking (default: length of elements)
+(define (get-random-element elements [start-index 0] [end-index (length elements)])
+  (list-ref elements (random start-index end-index)))
 
 ; construct symbol for input variable
 ; args:
@@ -22,7 +24,7 @@
   (let f ([result '()] [i inputs-count])
     (if (zero? i)
         result
-        (f (append result (list (get-input-symbol i))) (- i 1))
+        (f (append result (list (get-input-symbol i))) (sub1 i))
      )
     )
   )
@@ -33,10 +35,12 @@
 ;     n      - index of element
 (define (list-reverse-tail lst n)
   (cond
-    [(zero? n) lst]
-    [(= n (- (length lst) 1)) (list (rcar lst))]
-    [(>= (length lst)) '()]
-    [else (reverse (list-tail (reverse lst) (- n 1)))]
+    [(or (> n (- (length lst) 1)) (< n 0))
+     (error (string-append "Index "
+                           (number->string n)
+                           " out of range of "
+                           (number->string (sub1 (length lst)))))]
+    [else (reverse (list-tail (reverse lst) (- (length lst) n 1)))]
   )
 )
 
@@ -54,7 +58,7 @@
 ; inserts element into a list at a specified position
 (define (list-insert lst element n)
   (append (rcdr (list-reverse-tail lst n))
-          element
+          (list element)
           (cdr (list-tail lst n))
   )
 )
@@ -94,7 +98,7 @@
          program
          (if (<= (random) sub-probability)
              (append program (list (get-random-program)))
-             (random-element (append program (list (get-terminator))) (- i 1))
+             (random-element (append program (list (get-terminator))) (sub1 i))
              )
          )
      )
@@ -105,7 +109,7 @@
   (let f ([result '()] [i population-size])
     (if (zero? i)
         result
-        (f (append result (list (get-random-program))) (- i 1))
+        (f (append result (list (get-random-program))) (sub1 i))
         )
    )
 )
@@ -113,8 +117,25 @@
 ; ------ PROGRAM MODIFICATION ------
 ; Crossovers, mutations
 
-(define (mutate program)
+(define (mutate-subtree program)
   (list-insert program
                (get-random-program)
-               (random 0 (+ (length program) 1)))
+               (random 1 (length program)))
+  )
+
+(define (mutate-terminator program)
+  (let f ([subtree program])
+    (let ([mutation-point (random 1 (length subtree))])
+      (if (list? (list-ref subtree mutation-point))
+          (list-insert subtree
+                       (f (list-ref subtree mutation-point))
+                       mutation-point
+                       )
+          (list-insert subtree
+                       (get-terminator)
+                       mutation-point
+                       )
+          )
+      )
+    )
   )
