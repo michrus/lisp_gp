@@ -82,6 +82,7 @@
 
 ; mutation consts
 (define default-mutation-type 'mutate-terminator)
+(define mutate-subtree-recurse-probability 1.0)
 
 ; ------ PROGRAM GENERATION ------
 
@@ -120,10 +121,26 @@
 ; ------ PROGRAM MODIFICATION ------
 ; Crossovers, mutations
 
+; mutate program, by picking random point and growing new subtree at it
+; args:
+;     program    - program list
 (define (mutate-subtree program)
-  (list-insert program
-               (get-random-program)
-               (random 1 (length program)))
+  (let f ([subtree program])
+    (let ([mutation-point (random 1 (length subtree))])
+      (if (and (list? (list-ref subtree mutation-point))
+               (<= (random) mutate-subtree-recurse-probability)
+               )
+          (list-insert subtree
+                       (f (list-ref subtree mutation-point))
+                       mutation-point
+                       )
+          (list-insert subtree
+                       (get-random-program)
+                       mutation-point
+                       )
+          )
+      )
+    )
   )
 
 (define (mutate-terminator program)
