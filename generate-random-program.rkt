@@ -131,10 +131,14 @@
                        (f (list-ref subtree mutation-point))
                        mutation-point
                        )
-          (list-insert subtree
-                       (get-terminator)
-                       mutation-point
-                       )
+          (let g ([new-element (get-terminator)])
+            (if (eq? (list-ref subtree mutation-point) new-element)
+                (g (get-terminator))
+                (list-insert subtree
+                             new-element
+                             mutation-point)
+                )
+            )
           )
       )
     )
