@@ -151,6 +151,13 @@
   )
 )
 
+(define (list-merge lst element n)
+  (append (rcdr (list-reverse-tail lst n))
+          element
+          (cdr (list-tail lst n))
+  )
+)
+
 ; ------ GLOBAL CONSTS ------
 ; input consts
 (define inputs-count 2)
@@ -215,37 +222,48 @@
 ; args:
 ;     program    - program list
 (define (mutate-prob program)
-  (let ([mutation-point (random)]
+  (append (list (car program))
+   (let ([mutation-point (random)]
         [node-probability (/ 1 (count-nodes (cdr program)))])
     (let f ([subtree (cdr program)]
             [probability-tree (get-node-probabilities (cdr program) node-probability)]
             [i 0]
             [prev-prob 0])
-      (cond
-        [(<= mutation-point (list-ref probability-tree i))
-         (cond
-           [(list? (list-ref subtree i))
-            (let ([new-subtree (list-ref subtree i)])
+      (let ([element (list-ref subtree i)])
+        (cond
+          [(<= mutation-point (list-ref probability-tree i))
+           (cond
+             [(list? element)
+              (let ([new-subtree element])
+                (list-insert subtree
+                             (f new-subtree
+                                (get-node-probabilities new-subtree node-probability prev-prob)
+                                0
+                                (list-ref probability-tree i))
+                             i))]
+             [else
               (list-insert subtree
-                           (f new-subtree
-                              (get-node-probabilities new-subtree node-probability prev-prob)
-                              0
-                              (list-ref probability-tree i))
-                           i))]
-           [else
-            (list-insert subtree
-                         (let g ([new-element (get-terminator)])
-                           (if (eq? (list-ref subtree i) new-element)
-                               (g (get-terminator))
-                               new-element
-                               ))
-                           i)])]
-        [else
-         (f subtree
-            probability-tree
-            (add1 i)
-            (list-ref probability-tree i))])
-  )))
+                           (if (procedure? (eval element))
+                               (let g ([new-element (get-random-element functions)])
+                                 (if (eq? element new-element)
+                                     (g (get-random-element functions))
+                                     new-element
+                                     ))
+                               (let g ([new-element (get-terminator)])
+                                 (if (eq? element new-element)
+                                     (g (get-terminator))
+                                     new-element
+                                     ))
+                               )
+                           i)
+                  ])]
+          [else
+           (f subtree
+              probability-tree
+              (add1 i)
+              (list-ref probability-tree i))])
+        )
+  ))))
 
 ; mutate program using mutation procedure of choice
 ; args:
