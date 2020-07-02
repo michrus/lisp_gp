@@ -109,10 +109,10 @@
 ; args:
 ;     inputs-count    - number of input variables
 (define (get-input-symbol-list inputs-count)
-  (let f ([result '()] [i inputs-count])
-    (if (zero? i)
+  (let f ([result '()] [i 0])
+    (if (= i inputs-count)
         result
-        (f (append result (list (get-input-symbol i))) (sub1 i))
+        (f (append result (list (get-input-symbol i))) (add1 i))
      )
     )
   )
@@ -160,7 +160,7 @@
 
 ; ------ GLOBAL CONSTS ------
 ; input consts
-(define inputs-count 2)
+(define inputs-count 1)
 (define input-symbols (get-input-symbol-list inputs-count))
 
 ; terminator generation consts
@@ -344,6 +344,7 @@
         )
       )))
 
+; insert element at given point in program
 (define (program-insert program insert-element probabiity-point)
   (append (list (car program))
           (let ([node-probability (/ 1 (count-nodes (cdr program)))])
@@ -393,3 +394,20 @@
                      crossover-pointB))
     )
   )
+
+; ------ PROGRAM EVALUATION ------
+
+; DATA
+; Data for function y = 5.6x^3 + 1.43x^2 + 7
+; first column is x, second is y
+(define X '(-10.0 -7.7 -5.5 -3.3 -1.1 1.1 3.3 5.5 7.7 10.0))
+(define Y '(-5450.0 -2541.3 -909.1 -184.5 1.1 16.4 230.3 1011.3 2728.3 5750.0))
+
+(define (bind-symbol-value symbol value)
+  (eval (list 'define symbol value))
+  )
+
+(define (bind-input-values symbols values)
+  (map bind-symbol-value symbols values)
+  )
+
