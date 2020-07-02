@@ -410,10 +410,10 @@
 
 ; bind single symbol to numerical value
 (define (bind-symbol-value symbol value)
-  (eval-expr (list 'define symbol value))
+  (eval-expr `(let ([symbol ,value]),'symbol))
   )
 
 ; bind list of symbols to numerical values passed as list
 (define (bind-input-values symbols values)
-  (for-each bind-symbol-value symbols values)
+  (map bind-symbol-value symbols values)
   )
