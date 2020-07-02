@@ -240,52 +240,6 @@
 ; Crossovers, mutations
 
 ; MUTATION
-; mutate program, by picking random point and growing new subtree at it
-; args:
-;     program    - program list
-(define (mutate-subtree program)
-  (let f ([subtree program])
-    (let ([mutation-point (get-random-index subtree 1)])
-      (if (and (list? (list-ref subtree mutation-point))
-               (<= (random) mutate-subtree-recurse-probability)
-               )
-          (list-insert subtree
-                       (f (list-ref subtree mutation-point))
-                       mutation-point
-                       )
-          (list-insert subtree
-                       (get-random-program)
-                       mutation-point
-                       )
-          )
-      )
-    )
-  )
-
-; mutate program, by picking random terminator and replacing it by new random terminator
-; args:
-;     program    - program list
-(define (mutate-terminator program)
-  (let f ([subtree program])
-    (let ([mutation-point (get-random-index subtree 1)])
-      (if (list? (list-ref subtree mutation-point))
-          (list-insert subtree
-                       (f (list-ref subtree mutation-point))
-                       mutation-point
-                       )
-          (let g ([new-element (get-terminator)])
-            (if (eq? (list-ref subtree mutation-point) new-element)
-                (g (get-terminator))
-                (list-insert subtree
-                             new-element
-                             mutation-point)
-                )
-            )
-          )
-      )
-    )
-  )
-
 ; mutate program, chosing mutation point based on probability of it's elements (which should be uniform)
 ; args:
 ;     program    - program list
