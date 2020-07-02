@@ -234,16 +234,16 @@
           [(<= mutation-point (list-ref probability-tree i))
            (cond
              [(list? element)
-              (let ([new-subtree element])
-                (list-insert subtree
-                             (f new-subtree
-                                (get-node-probabilities new-subtree node-probability prev-prob)
-                                0
-                                (list-ref probability-tree i))
-                             i))]
+              (list-insert subtree
+                           (f element
+                              (get-node-probabilities element node-probability prev-prob)
+                              0
+                              (list-ref probability-tree i))
+                           i)]
              [else
               (list-insert subtree
-                           (if (procedure? (eval element))
+                           (if (and (= i 0)
+                                    (not (equal? (cdr program) subtree)))
                                (let g ([new-element (get-random-element functions)])
                                  (if (eq? element new-element)
                                      (g (get-random-element functions))
@@ -274,6 +274,37 @@
   )
 
 ; CROSSOVER
+
+(define (find-subtree program probabiity-point)
+  (let ([node-probability (/ 1 (count-nodes (cdr program)))])
+    (let f ([subtree (cdr program)]
+            [probability-tree (get-node-probabilities (cdr program) node-probability)]
+            [i 0]
+            [prev-prob 0])
+      (let ([element (list-ref subtree i)]
+            [element-probability (list-ref probability-tree i)])
+        (cond
+          [(<= probabiity-point element-probability)
+           (cond
+             [(list? element)
+              (f element
+                 (get-node-probabilities element node-probability prev-prob)
+                 0
+                 element-probability)]
+             [else
+              (if (and (= i 0)
+                       (not (equal? (cdr program) subtree)))
+                  subtree
+                  element
+                  )
+              ])]
+          [else
+           (f subtree
+              probability-tree
+              (add1 i)
+              element-probability)])
+        )
+      )))
 
 ;(define (crossover programA programB)
 ;  (let ([crossover-pointA (get-random-index programA 1)]
