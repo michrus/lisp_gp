@@ -60,36 +60,7 @@
 ; constructs list of probabilities for program element's to be chosen, discounts root element.
 ; args:
 ;     program    - program list
-;     [discount-functions]    - should be 0 or 1, in which case only terminators will be counted
-(define (get-node-probabilities program)
-  (let ([node-probability (/ 1 (sub1 (count-nodes program)))])
-      (let f ([offset 0]
-              [subtree (cdr program)]
-              [probability-tree '()]
-              [i 0])
-        (if (= i (length subtree))
-         probability-tree
-         (f (if (list? (list-ref subtree i))
-                (+ offset (get-subtree-probability (list-ref subtree i) node-probability))
-                (+ offset node-probability)
-                )
-                subtree
-                (append probability-tree (list (if (list? (list-ref subtree i))
-                                                   (f offset
-                                                      (list-ref subtree i)
-                                                      '()
-                                                      0
-                                                      )
-                                                   (+ offset node-probability)
-                                                   )))
-                (add1 i)
-                )
-        )
-    )
-  )
-  )
-
-(define (get-node-probabilities2 program [node-probability (/ 1 (count-nodes program))] [start-offset 0])
+(define (get-node-probabilities program [node-probability (/ 1 (count-nodes program))] [start-offset 0])
   (let f ([offset start-offset]
           [subtree program]
           [probability-tree '()]
@@ -247,7 +218,7 @@
   (let ([mutation-point 0.7]
         [node-probability (/ 1 (count-nodes (cdr program)))])
     (let f ([subtree (cdr program)]
-            [probability-tree (get-node-probabilities2 (cdr program) node-probability)]
+            [probability-tree (get-node-probabilities (cdr program) node-probability)]
             [i 0]
             [prev-prob 0])
       (cond
@@ -257,7 +228,7 @@
             (let ([new-subtree (list-ref subtree i)])
               (list-insert subtree
                            (f new-subtree
-                              (get-node-probabilities2 new-subtree node-probability prev-prob)
+                              (get-node-probabilities new-subtree node-probability prev-prob)
                               0
                               (list-ref probability-tree i))
                            i))]
