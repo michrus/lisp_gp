@@ -265,6 +265,44 @@
         )
   ))))
 
+; mutate program, adding sub-program at random point
+; args:
+;     program    - program list
+(define (mutate-architecture program)
+  (append (list (car program))
+   (let ([mutation-point (random)]
+        [node-probability (/ 1 (count-nodes (cdr program)))])
+    (let f ([subtree (cdr program)]
+            [probability-tree (get-node-probabilities (cdr program) node-probability)]
+            [i 0]
+            [prev-prob 0])
+      (let ([element (list-ref subtree i)]
+            [element-probability (list-ref probability-tree i)])
+        (cond
+          [(<= mutation-point element-probability)
+           (cond
+             [(list? element)
+              (list-insert subtree
+                           (f element
+                              (get-node-probabilities element node-probability prev-prob)
+                              0
+                              element-probability)
+                           i)]
+             [else
+              (if (and (= i 0)
+                       (not (equal? (cdr program) subtree)))
+                  (get-random-program)
+                  (list-insert subtree
+                               (get-random-program)
+                               i))])]
+          [else
+           (f subtree
+              probability-tree
+              (add1 i)
+              (list-ref probability-tree i))])
+        )
+  ))))
+
 ; mutate program using mutation procedure of choice
 ; args:
 ;     program                - program list
