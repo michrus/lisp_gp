@@ -306,6 +306,42 @@
         )
       )))
 
+(define (program-insert program insert-element probabiity-point)
+  (append (list (car program))
+          (let ([node-probability (/ 1 (count-nodes (cdr program)))])
+            (let f ([subtree (cdr program)]
+                    [probability-tree (get-node-probabilities (cdr program) node-probability)]
+                    [i 0]
+                    [prev-prob 0])
+              (let ([element (list-ref subtree i)]
+                    [element-probability (list-ref probability-tree i)])
+                (cond
+                  [(<= probabiity-point element-probability)
+                   (cond
+                     [(list? element)
+                      (list-insert subtree
+                                   (f element
+                                      (get-node-probabilities element node-probability prev-prob)
+                                      0
+                                      element-probability)
+                                   i)]
+                     [else
+                      (if (and (= i 0)
+                               (not (equal? (cdr program) subtree)))
+                          insert-element
+                          (list-insert subtree
+                                       insert-element
+                                       i)
+                          )
+                      ])]
+                  [else
+                   (f subtree
+                      probability-tree
+                      (add1 i)
+                      element-probability)])
+                )
+              ))))
+
 ;(define (crossover programA programB)
 ;  (let ([crossover-pointA (get-random-index programA 1)]
 ;        [crossover-pointB (get-random-index programB 1)])
