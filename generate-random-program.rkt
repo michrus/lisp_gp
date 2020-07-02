@@ -403,11 +403,17 @@
 (define X '(-10.0 -7.7 -5.5 -3.3 -1.1 1.1 3.3 5.5 7.7 10.0))
 (define Y '(-5450.0 -2541.3 -909.1 -184.5 1.1 16.4 230.3 1011.3 2728.3 5750.0))
 
+; needed to properly run eval
+(define eval-expr
+  (let ((ns (make-base-namespace)))
+    (lambda (expr) (eval expr ns))))
+
+; bind single symbol to numerical value
 (define (bind-symbol-value symbol value)
-  (eval (list 'define symbol value))
+  (eval-expr (list 'define symbol value))
   )
 
+; bind list of symbols to numerical values passed as list
 (define (bind-input-values symbols values)
-  (map bind-symbol-value symbols values)
+  (for-each bind-symbol-value symbols values)
   )
-
