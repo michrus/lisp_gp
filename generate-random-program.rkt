@@ -215,7 +215,7 @@
 ; args:
 ;     program    - program list
 (define (mutate-prob program)
-  (let ([mutation-point 0.7]
+  (let ([mutation-point (random)]
         [node-probability (/ 1 (count-nodes (cdr program)))])
     (let f ([subtree (cdr program)]
             [probability-tree (get-node-probabilities (cdr program) node-probability)]
