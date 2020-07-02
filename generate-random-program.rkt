@@ -2,6 +2,85 @@
 
 ; ------ HELPER FUCTIONS ------
 
+; counts number of nodes in list, accounting for nested elements
+; args:
+;     program                 - program list
+;     [discount-functions]    - should be 0 or 1, in which case only terminators will be counted
+(define (count-nodes program [discount-functions 0])
+   (- (let f ([subtree program]
+           [count 0])
+     (if (null? subtree)
+         count
+         (f (cdr subtree)
+            (if (list? (car subtree))
+                (- (f (car subtree) count) discount-functions)    
+                (add1 count)
+                )
+            )
+         )
+     ) discount-functions)
+  )
+
+; counts number of terminator nodes in list, accounting for nested elements
+; args:
+;     program                 - program list
+(define (count-terminators program)
+  (count-nodes program 1)
+  )
+
+; counts probability of sub-list, used for node probability calculation
+; args:
+;     top-subtree         - list to count probability of
+;     node-probability    - probability of single element
+(define (get-subtree-probability top-subtree node-probability)
+  (let f ([subtree top-subtree]
+          [count 0])
+    (if (null? subtree)
+         count
+         (f (cdr subtree)
+            (if (list? (car subtree))
+                (f (car subtree) count)    
+                (+ count node-probability)
+                )
+            )
+         )
+    )
+  )
+
+; constructs list of probabilities for program element's to be chosen
+(define (get-node-probabilities program)
+  (let ([node-probability (/ 1 (count-nodes program))])
+      (let f ([offset 0]
+              [subtree program]
+              [probability-tree '()]
+              [i 0])
+        (if (= i (length subtree))
+         probability-tree
+         (if (list? (list-ref subtree i))
+             (f (+ offset (get-subtree-probability (list-ref subtree i) node-probability))
+                (list-ref subtree i)
+                '()
+                0
+                )
+             (f (+ offset node-probability)
+                subtree
+                (append probability-tree (list (+ offset node-probability)))
+                (add1 i)
+                )
+         )
+        )
+    )
+  )
+  )
+
+; gets random index for list
+; args:
+;     elements        - list of elements to be randomly chosen from
+;     [start-index]   - lower bound index for random picking (default: 0)
+(define (get-random-index elements [start-index 0])
+  (random start-index (length elements))
+  )
+
 ; gets random element from list provided as argument
 ; args:
 ;     elements        - list of elements to be randomly chosen from
@@ -97,7 +176,8 @@
 ; generate random program tree
 (define (get-random-program)
   (append (list (get-random-element functions))
-   (let random-element ([program '()] [i (random min-sub-elements max-sub-elements)])
+   (let random-element ([program '()]
+                        [i (random min-sub-elements max-sub-elements)])
      (if (zero? i)
          program
          (if (<= (random) sub-probability)
@@ -121,12 +201,13 @@
 ; ------ PROGRAM MODIFICATION ------
 ; Crossovers, mutations
 
+; MUTATION
 ; mutate program, by picking random point and growing new subtree at it
 ; args:
 ;     program    - program list
 (define (mutate-subtree program)
   (let f ([subtree program])
-    (let ([mutation-point (random 1 (length subtree))])
+    (let ([mutation-point (get-random-index subtree 1)])
       (if (and (list? (list-ref subtree mutation-point))
                (<= (random) mutate-subtree-recurse-probability)
                )
@@ -148,7 +229,7 @@
 ;     program    - program list
 (define (mutate-terminator program)
   (let f ([subtree program])
-    (let ([mutation-point (random 1 (length subtree))])
+    (let ([mutation-point (get-random-index subtree 1)])
       (if (list? (list-ref subtree mutation-point))
           (list-insert subtree
                        (f (list-ref subtree mutation-point))
@@ -174,3 +255,12 @@
 (define (mutate program [mutation-procedure (eval default-mutation-type)])
   (mutation-procedure program)
   )
+
+; CROSSOVER
+
+;(define (crossover programA programB)
+;  (let ([crossover-pointA (get-random-index programA 1)]
+;        [crossover-pointB (get-random-index programB 1)])
+;    
+;    )
+;  )
