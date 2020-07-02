@@ -342,9 +342,16 @@
                 )
               ))))
 
-;(define (crossover programA programB)
-;  (let ([crossover-pointA (get-random-index programA 1)]
-;        [crossover-pointB (get-random-index programB 1)])
-;    
-;    )
-;  )
+; perform crossover between two programs
+(define (crossover programA programB)
+  (let ([crossover-pointA (random)]
+        [crossover-pointB (random)])
+    (list
+     (program-insert programA
+                     (find-subtree programB crossover-pointB)
+                     crossover-pointA)
+     (program-insert programB
+                     (find-subtree programA crossover-pointA)
+                     crossover-pointB))
+    )
+  )
