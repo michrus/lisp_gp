@@ -32,6 +32,7 @@
 ; args:
 ;     top-subtree         - list to count probability of
 ;     node-probability    - probability of single element
+;     [discount-functions]    - should be 0 or 1, in which case only terminators will be counted
 (define (get-subtree-probability top-subtree node-probability [discount-functions 0])
   (let f ([subtree top-subtree]
           [i discount-functions]
@@ -56,19 +57,20 @@
     )
   )
 
-; constructs list of probabilities for program element's to be chosen
+; constructs list of probabilities for program element's to be chosen, discounts root element.
 ; args:
 ;     program    - program list
-(define (get-node-probabilities program [discount-functions 0])
-  (let ([node-probability (/ 1 (count-nodes program discount-functions))])
+;     [discount-functions]    - should be 0 or 1, in which case only terminators will be counted
+(define (get-node-probabilities program)
+  (let ([node-probability (/ 1 (sub1 (count-nodes program)))])
       (let f ([offset 0]
-              [subtree program]
+              [subtree (cdr program)]
               [probability-tree '()]
-              [i discount-functions])
+              [i 0])
         (if (= i (length subtree))
          probability-tree
          (f (if (list? (list-ref subtree i))
-                (+ offset (get-subtree-probability (list-ref subtree i) node-probability discount-functions))
+                (+ offset (get-subtree-probability (list-ref subtree i) node-probability))
                 (+ offset node-probability)
                 )
                 subtree
@@ -76,7 +78,7 @@
                                                    (f offset
                                                       (list-ref subtree i)
                                                       '()
-                                                      discount-functions
+                                                      0
                                                       )
                                                    (+ offset node-probability)
                                                    )))
@@ -85,6 +87,28 @@
         )
     )
   )
+  )
+
+(define (get-node-probabilities2 program [node-probability (/ 1 (count-nodes program))] [start-offset 0])
+  (let f ([offset start-offset]
+          [subtree program]
+          [probability-tree '()]
+          [i 0])
+    (if (= i (length subtree))
+        probability-tree
+        (let ([new-offset
+               (if (list? (list-ref subtree i))
+                   (+ offset (get-subtree-probability (list-ref subtree i) node-probability))
+                   (+ offset node-probability)
+                   )])
+          (f new-offset
+             subtree
+             (append probability-tree (list new-offset))
+             (add1 i)
+             )
+          )
+        )
+    )
   )
 
 ; gets random index for list
@@ -174,7 +198,7 @@
 (define population-size 5)
 
 ; mutation consts
-(define default-mutation-type 'mutate-terminator)
+(define default-mutation-type 'mutate-prob)
 (define mutate-subtree-recurse-probability 1.0)
 
 ; ------ PROGRAM GENERATION ------
@@ -261,6 +285,42 @@
       )
     )
   )
+
+; mutate program, chosing mutation point based on probability of it's elements (which should be uniform)
+; args:
+;     program    - program list
+(define (mutate-prob program)
+  (let ([mutation-point 0.7]
+        [node-probability (/ 1 (count-nodes (cdr program)))])
+    (let f ([subtree (cdr program)]
+            [probability-tree (get-node-probabilities2 (cdr program) node-probability)]
+            [i 0]
+            [prev-prob 0])
+      (cond
+        [(<= mutation-point (list-ref probability-tree i))
+         (cond
+           [(list? (list-ref subtree i))
+            (let ([new-subtree (list-ref subtree i)])
+              (list-insert subtree
+                           (f new-subtree
+                              (get-node-probabilities2 new-subtree node-probability prev-prob)
+                              0
+                              (list-ref probability-tree i))
+                           i))]
+           [else
+            (list-insert subtree
+                         (let g ([new-element (get-terminator)])
+                           (if (eq? (list-ref subtree i) new-element)
+                               (g (get-terminator))
+                               new-element
+                               ))
+                           i)])]
+        [else
+         (f subtree
+            probability-tree
+            (add1 i)
+            (list-ref probability-tree i))])
+  )))
 
 ; mutate program using mutation procedure of choice
 ; args:
