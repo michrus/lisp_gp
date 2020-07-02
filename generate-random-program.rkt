@@ -32,42 +32,56 @@
 ; args:
 ;     top-subtree         - list to count probability of
 ;     node-probability    - probability of single element
-(define (get-subtree-probability top-subtree node-probability)
+(define (get-subtree-probability top-subtree node-probability [discount-functions 0])
   (let f ([subtree top-subtree]
+          [i discount-functions]
           [count 0])
-    (if (null? subtree)
+    (if (= i (length subtree))
          count
-         (f (cdr subtree)
-            (if (list? (car subtree))
-                (f (car subtree) count)    
+         (if (list? (list-ref subtree i))
+             (f subtree
+                (add1 i)
+                (+ count (f (list-ref subtree i)
+                            discount-functions
+                            0
+                            )
+                       )
+                )
+             (f subtree
+                (add1 i)
                 (+ count node-probability)
                 )
-            )
+             )
          )
     )
   )
 
 ; constructs list of probabilities for program element's to be chosen
-(define (get-node-probabilities program)
-  (let ([node-probability (/ 1 (count-nodes program))])
+; args:
+;     program    - program list
+(define (get-node-probabilities program [discount-functions 0])
+  (let ([node-probability (/ 1 (count-nodes program discount-functions))])
       (let f ([offset 0]
               [subtree program]
               [probability-tree '()]
-              [i 0])
+              [i discount-functions])
         (if (= i (length subtree))
          probability-tree
-         (if (list? (list-ref subtree i))
-             (f (+ offset (get-subtree-probability (list-ref subtree i) node-probability))
-                (list-ref subtree i)
-                '()
-                0
+         (f (if (list? (list-ref subtree i))
+                (+ offset (get-subtree-probability (list-ref subtree i) node-probability discount-functions))
+                (+ offset node-probability)
                 )
-             (f (+ offset node-probability)
                 subtree
-                (append probability-tree (list (+ offset node-probability)))
+                (append probability-tree (list (if (list? (list-ref subtree i))
+                                                   (f offset
+                                                      (list-ref subtree i)
+                                                      '()
+                                                      discount-functions
+                                                      )
+                                                   (+ offset node-probability)
+                                                   )))
                 (add1 i)
                 )
-         )
         )
     )
   )
