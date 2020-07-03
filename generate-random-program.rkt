@@ -410,10 +410,46 @@
 
 ; bind single symbol to numerical value
 (define (bind-symbol-value symbol value)
-  (eval-expr `(let ([symbol ,value]),'symbol))
+  ;(eval-expr `(let ([symbol ,value]),'symbol))
+  (eval-expr (list 'define symbol value))
   )
 
 ; bind list of symbols to numerical values passed as list
 (define (bind-input-values symbols values)
-  (map bind-symbol-value symbols values)
+  (for-each bind-symbol-value symbols values)
   )
+
+; returns outputs from program executed on input data
+(define (execute-program program input-data)
+  (let f ([x-local input-data]
+          [y-pred '()])
+    (cond
+      [(not (null? x-local))
+       (let ([input-vector (list (car x-local))])
+         (bind-input-values input-symbols input-vector)
+         (f (cdr x-local)
+            (append y-pred (list (eval-expr program)))))]
+      [else y-pred])))
+
+(define (get-total-error y-pred target-data)
+  (let f ([total-error 0]
+          [y-pred-local y-pred]
+          [target-data-local target-data])
+    (cond
+      [(null? y-pred-local) total-error]
+      [else
+       (let ([y-pred-value (car y-pred-local)]
+             [target-value (car target-data-local)])
+         (f (+ total-error (abs (- target-value y-pred-value)))
+            (cdr y-pred-local)
+            (cdr target-data-local)))])))
+
+(define (get-average-error y-pred target-data)
+  (let ([y-count (length y-pred)])
+    (/ (get-total-error y-pred target-data) y-count)))
+
+(define foo (get-random-program))
+(display foo)
+(display "\n")
+(define bar (execute-program foo X))
+(get-average-error bar Y)
