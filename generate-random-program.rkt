@@ -179,6 +179,9 @@
 (define default-mutation-type 'mutate-prob)
 (define mutate-subtree-recurse-probability 1.0)
 
+; fitness const
+(define fitness-constant 1000)
+
 ; ------ PROGRAM GENERATION ------
 
 ; returns terminator element for program tree - either input variable or random constant
@@ -205,6 +208,7 @@
   )
 )
 
+; get population of random programs
 (define (get-population)
   (let f ([result '()] [i population-size])
     (if (zero? i)
@@ -410,7 +414,6 @@
 
 ; bind single symbol to numerical value
 (define (bind-symbol-value symbol value)
-  ;(eval-expr `(let ([symbol ,value]),'symbol))
   (eval-expr (list 'define symbol value))
   )
 
@@ -448,8 +451,28 @@
   (let ([y-count (length y-pred)])
     (/ (get-total-error y-pred target-data) y-count)))
 
-(define foo (get-random-program))
-(display foo)
-(display "\n")
-(define bar (execute-program foo X))
-(get-average-error bar Y)
+(define (get-fitness average-error)
+  (/ fitness-constant (+ 1 average-error)))
+
+(define (get-population-fitness population X)
+  (let f ([i 0] [population-fitness '()])
+    (if (= i (length population))
+        population-fitness
+        (f (add1 i) (append population-fitness
+                            (list
+                             (get-fitness
+                              (get-average-error
+                               (execute-program (list-ref population i) X)
+                               Y))))))))
+
+(define (get-program-fitness-pairs program-population fitness-list)
+  (map (lambda (a b) (list a b)) program-population fitness-list))
+
+(define (sort-population program-fitness-pairs)
+  (sort program-fitness-pairs (lambda (a b)
+                                (< (cadr a)
+                                   (cadr b)))))
+
+(define foo (get-population))
+(define bar (get-population-fitness foo X))
+(sort-population (get-program-fitness-pairs foo bar))
