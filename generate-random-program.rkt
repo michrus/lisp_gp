@@ -21,16 +21,16 @@
 (define min-sub-elements 2)
 (define max-sub-elements 4)
 (define sub-probability 0.2)
-(define population-size 5)
+(define population-size 10)
 
 ; fitness const
 (define fitness-constant 1000)
 
 ; genetic operations consts
-(define reproduction-probability 0.47)
-(define crossover-probability 0.4)
+(define reproduction-probability 0.70)
+(define crossover-probability 0.15)
 (define mutation-probability 0.1)
-(define architecture-mutation-probability 0.03)
+(define architecture-mutation-probability 0.05)
 
 (define best-always-reproduce #t)
 (define best-count 2)
@@ -554,16 +554,16 @@
       (if (zero? i)
           new-population
           (f (sub1 i)
-             (append new-population (list ((get-random-genetic-operation) program-fitness-pairs))))))))
+             (append (list ((get-random-genetic-operation) program-fitness-pairs)) new-population))))))
 
 (define (genetic-programming input-data target iterations)
   (let* ([result-population 
          (let f ([i 0]
                  [population (get-population)])
-           (let* ([program-fitness-pairs (get-program-fitness-pairs population
+           (let* ([program-fitness-pairs (sort-population (get-program-fitness-pairs population
                                                                     (get-population-fitness population
                                                                                             input-data
-                                                                                            target))]
+                                                                                            target)))]
                   [best-pair (rcar program-fitness-pairs)]
                   [best-program (car best-pair)]
                   [best-fitness (cadr best-pair)]
@@ -586,4 +586,8 @@
 ; SETTINGS
 
 ; RUN GENETIC PROGRAMMING
-(genetic-programming X Y gp-iterations)
+(let ([result-average-error
+       (get-average-error
+        (execute-program (genetic-programming X Y gp-iterations) X)
+        Y)])
+  (displayln (string-append "Average error from resulting program: " (number->string result-average-error))))
