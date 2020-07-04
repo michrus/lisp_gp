@@ -225,7 +225,7 @@
 ; mutate program, chosing mutation point based on probability of it's elements (which should be uniform)
 ; args:
 ;     program    - program list
-(define (mutate-prob program)
+(define (mutate program)
   (append (list (car program))
    (let ([mutation-point (random)]
         [node-probability (/ 1 (count-nodes (cdr program)))])
@@ -307,14 +307,6 @@
         )
   ))))
 
-; mutate program using mutation procedure of choice
-; args:
-;     program                - program list
-;     [mutation-procedure]   - procedure used for mutation (default: take from global constant)
-(define (mutate program [mutation-procedure (eval default-mutation-type)])
-  (mutation-procedure program)
-  )
-
 ; CROSSOVER
 
 (define (find-subtree program probabiity-point)
@@ -389,13 +381,13 @@
 (define (crossover programA programB)
   (let ([crossover-pointA (random)]
         [crossover-pointB (random)])
-    (list
+;    (list
      (program-insert programA
                      (find-subtree programB crossover-pointB)
                      crossover-pointA)
-     (program-insert programB
-                     (find-subtree programA crossover-pointA)
-                     crossover-pointB))
+;     (program-insert programB
+;                     (find-subtree programA crossover-pointA)
+;                     crossover-pointB))
     )
   )
 
@@ -503,6 +495,39 @@
     (if (equal? first second)
         (select-two-programs-probabilistically program-fitness-pairs)
         (list first second))))
+
+; genetic operations consts
+(define reproduction-probability 0.6)
+(define crossover-probability 0.2)
+(define mutation-probability 0.1)
+(define architecture-mutation-probability 0.1)
+(define genetic-operations (list (list (list
+                                        "Reproduction"
+                                        (lambda (program-fitness-pairs)
+                                         (select-program-probabilistically
+                                          program-fitness-pairs)))
+                                       reproduction-probability)
+                                 (list (list
+                                        "Crossover"
+                                        (lambda (program-fitness-pairs)
+                                         (apply crossover
+                                                (select-two-programs-probabilistically
+                                                 program-fitness-pairs))))
+                                       crossover-probability)
+                                 (list (list
+                                        "Mutation"
+                                        (lambda (program-fitness-pairs)
+                                         (mutate (select-program-probabilistically
+                                                  program-fitness-pairs))))
+                                       mutation-probability)
+                                 (list (list
+                                        "Architecture mutation"
+                                        (lambda (program-fitness-pairs)
+                                         (mutate-architecture (select-program-probabilistically
+                                                               program-fitness-pairs))))
+                                       architecture-mutation-probability)))
+
+(define genetic-oprations-roulette (get-population-roulette genetic-operations))
 
 (define foo (get-population))
 (define bar (get-population-fitness foo X))
