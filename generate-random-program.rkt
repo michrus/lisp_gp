@@ -473,6 +473,20 @@
                                 (< (cadr a)
                                    (cadr b)))))
 
+(define (get-population-roulette program-fitness-pairs)
+  (let ([total-fitness (apply +(map cadr program-fitness-pairs))])
+    (let f ([pairs program-fitness-pairs] [offset 0] [population-roulette '()])
+        (if (null? pairs)
+            population-roulette
+            (let* ([program (caar pairs)]
+                   [program-fitness (cadr (car pairs))]
+                   [program-probability (/ program-fitness total-fitness)]
+                   [new-offset (+ offset program-probability)])
+              (f (cdr pairs)
+                 new-offset
+                 (append population-roulette (list program new-offset))))))))
+
 (define foo (get-population))
 (define bar (get-population-fitness foo X))
-(sort-population (get-program-fitness-pairs foo bar))
+(define baz (sort-population (get-program-fitness-pairs foo bar)))
+(get-population-roulette baz)
