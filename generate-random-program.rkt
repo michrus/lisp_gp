@@ -1,5 +1,41 @@
 #lang scheme
 
+; DATA
+; Data for function y = 5.6x^3 + 1.43x^2 + 7
+; first column is x, second is y
+(define X '(-10.0 -7.7 -5.5 -3.3 -1.1 1.1 3.3 5.5 7.7 10.0))
+(define Y '(-5450.0 -2541.3 -909.1 -184.5 1.1 16.4 230.3 1011.3 2728.3 5750.0))
+
+; ------ GLOBAL CONSTS ------
+; input consts
+(define inputs-count 1)
+
+; terminator generation consts
+(define terminator-random-min 1)
+(define terminator-random-max 10)
+(define terminator-const-probability 0.5)
+
+; program generation consts
+(define functions '(+ - * /))
+(define min-sub-elements 2)
+(define max-sub-elements 4)
+(define sub-probability 0.2)
+(define population-size 5)
+
+; fitness const
+(define fitness-constant 1000)
+
+; genetic operations consts
+(define reproduction-probability 0.47)
+(define crossover-probability 0.4)
+(define mutation-probability 0.1)
+(define architecture-mutation-probability 0.03)
+
+(define best-always-reproduce #t)
+
+; number of iterations
+(define gp-iterations 1000)
+
 ; ------ HELPER FUCTIONS ------
 
 ; counts number of nodes in list, accounting for nested elements
@@ -117,6 +153,8 @@
     )
   )
 
+(define input-symbols (get-input-symbol-list inputs-count))
+
 ; returns part of the list from first element to the specified element (including)
 ; args:
 ;     lst    - list
@@ -157,30 +195,6 @@
           (cdr (list-tail lst n))
   )
 )
-
-; ------ GLOBAL CONSTS ------
-; input consts
-(define inputs-count 1)
-(define input-symbols (get-input-symbol-list inputs-count))
-
-; terminator generation consts
-(define terminator-random-min 1)
-(define terminator-random-max 10)
-(define terminator-const-probability 0.5)
-
-; program generation consts
-(define functions '(+ - * /))
-(define min-sub-elements 2)
-(define max-sub-elements 4)
-(define sub-probability 0.2)
-(define population-size 5)
-
-; mutation consts
-(define default-mutation-type 'mutate-prob)
-(define mutate-subtree-recurse-probability 1.0)
-
-; fitness const
-(define fitness-constant 1000)
 
 ; ------ PROGRAM GENERATION ------
 
@@ -393,12 +407,6 @@
 
 ; ------ PROGRAM EVALUATION ------
 
-; DATA
-; Data for function y = 5.6x^3 + 1.43x^2 + 7
-; first column is x, second is y
-(define X '(-10.0 -7.7 -5.5 -3.3 -1.1 1.1 3.3 5.5 7.7 10.0))
-(define Y '(-5450.0 -2541.3 -909.1 -184.5 1.1 16.4 230.3 1011.3 2728.3 5750.0))
-
 ; needed to properly run eval
 (define eval-expr
   (let ((ns (make-base-namespace)))
@@ -446,7 +454,7 @@
 (define (get-fitness average-error)
   (/ fitness-constant (+ 1 average-error)))
 
-(define (get-population-fitness population X)
+(define (get-population-fitness population input-data target)
   (let f ([i 0] [population-fitness '()])
     (if (= i (length population))
         population-fitness
@@ -454,8 +462,8 @@
                             (list
                              (get-fitness
                               (get-average-error
-                               (execute-program (list-ref population i) X)
-                               Y))))))))
+                               (execute-program (list-ref population i) input-data)
+                               target))))))))
 
 (define (get-program-fitness-pairs program-population fitness-list)
   (map (lambda (a b) (list a b)) program-population fitness-list))
@@ -466,7 +474,7 @@
                                    (cadr b)))))
 
 (define (get-population-roulette program-fitness-pairs)
-  (let ([total-fitness (apply +(map cadr program-fitness-pairs))])
+  (let ([total-fitness (apply + (map cadr program-fitness-pairs))])
     (let f ([pairs (sort-population program-fitness-pairs)] [offset 0] [population-roulette '()])
         (if (null? pairs)
             population-roulette
@@ -482,25 +490,21 @@
   (let ([population-roulette (get-population-roulette program-fitness-pairs)]
         [probability-point (random)])
     (let f ([pairs population-roulette])
-      (let* ([program-probability-pair (car pairs)]
-             [program (car program-probability-pair)]
-             [program-probability (cadr program-probability-pair)])
-        (if (<= probability-point program-probability)
-            program
-            (f (cdr pairs)))))))
+      (if (null? pairs)
+          (car (rcar program-fitness-pairs))
+          (let* ([program-probability-pair (car pairs)]
+                  [program (car program-probability-pair)]
+                  [program-probability (cadr program-probability-pair)])
+             (if (<= probability-point program-probability)
+                 program
+                 (f (cdr pairs))))))))
 
 (define (select-two-programs-probabilistically program-fitness-pairs)
   (let ([first (select-program-probabilistically program-fitness-pairs)]
         [second (select-program-probabilistically program-fitness-pairs)])
-    (if (equal? first second)
-        (select-two-programs-probabilistically program-fitness-pairs)
-        (list first second))))
+    (list first second)))
 
 ; genetic operations consts
-(define reproduction-probability 0.6)
-(define crossover-probability 0.2)
-(define mutation-probability 0.1)
-(define architecture-mutation-probability 0.1)
 (define genetic-operations (list (list (list
                                         "Reproduction"
                                         (lambda (program-fitness-pairs)
@@ -529,10 +533,45 @@
 
 (define (get-random-genetic-operation)
   (let ([selected (select-program-probabilistically genetic-operations)])
-    (displayln (car selected))
+    ;(displayln (car selected))
      (cadr selected)))
 
-(define foo (get-population))
-(define bar (get-population-fitness foo X))
-(define baz (sort-population (get-program-fitness-pairs foo bar)))
-(define biz (get-population-roulette baz))
+(define (get-new-population program-fitness-pairs [best-always-reproduce best-always-reproduce])
+  (let f ([i (length program-fitness-pairs)]
+          [new-population '()])
+    (if (zero? i)
+        new-population
+        (f (sub1 i)
+           (append new-population (list ((get-random-genetic-operation) program-fitness-pairs)))))))
+
+(define (genetic-programming input-data target iterations)
+  (let* ([result-population 
+         (let f ([i 0]
+                 [population (get-population)])
+           (let* ([program-fitness-pairs (get-program-fitness-pairs population
+                                                                    (get-population-fitness population
+                                                                                            input-data
+                                                                                            target))]
+                  [best-pair (rcar program-fitness-pairs)]
+                  [best-program (car best-pair)]
+                  [best-fitness (cadr best-pair)]
+                  )
+             (displayln (string-append "Iteration: " (number->string i)))
+             (displayln (string-append "Best fitness: " (number->string best-fitness)))
+             ;(pretty-display population)
+             (if (= i iterations)
+                 population
+                 (f (add1 i)
+                    (get-new-population program-fitness-pairs)))))]
+         [result-program (rcar result-population)])
+    (displayln "Genetic Programming stopped")
+    (displayln "Best Program:")
+    (pretty-display result-program)
+    (displayln "End population:")
+    (pretty-display result-population)
+    result-program))
+
+; SETTINGS
+
+; RUN GENETIC PROGRAMMING
+(genetic-programming X Y gp-iterations)
