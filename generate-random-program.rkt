@@ -475,7 +475,7 @@
 
 (define (get-population-roulette program-fitness-pairs)
   (let ([total-fitness (apply +(map cadr program-fitness-pairs))])
-    (let f ([pairs program-fitness-pairs] [offset 0] [population-roulette '()])
+    (let f ([pairs (sort-population program-fitness-pairs)] [offset 0] [population-roulette '()])
         (if (null? pairs)
             population-roulette
             (let* ([program (caar pairs)]
@@ -484,9 +484,20 @@
                    [new-offset (+ offset program-probability)])
               (f (cdr pairs)
                  new-offset
-                 (append population-roulette (list program new-offset))))))))
+                 (append population-roulette (list (list program new-offset)))))))))
+
+(define (select-program-probabilistically program-fitness-pairs)
+  (let ([population-roulette (get-population-roulette program-fitness-pairs)]
+        [probability-point (random)])
+    (let f ([pairs population-roulette])
+      (let* ([program-probability-pair (car pairs)]
+             [program (car program-probability-pair)]
+             [program-probability (cadr program-probability-pair)])
+        (if (<= probability-point program-probability)
+            program
+            (f (cdr pairs)))))))
 
 (define foo (get-population))
 (define bar (get-population-fitness foo X))
 (define baz (sort-population (get-program-fitness-pairs foo bar)))
-(get-population-roulette baz)
+(define biz (get-population-roulette baz))
