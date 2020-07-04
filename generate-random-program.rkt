@@ -527,7 +527,10 @@
                                                                program-fitness-pairs))))
                                        architecture-mutation-probability)))
 
-(define genetic-oprations-roulette (get-population-roulette genetic-operations))
+(define (get-random-genetic-operation)
+  (let ([selected (select-program-probabilistically genetic-operations)])
+    (displayln (car selected))
+     (cadr selected)))
 
 (define foo (get-population))
 (define bar (get-population-fitness foo X))
