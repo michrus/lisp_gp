@@ -2,6 +2,7 @@
 
 ; DATA
 ; Data for function y = 5.6x^3 + 1.43x^2 + 7
+; (so expected LISP program would be: (+ (* 5.6 x x x) (* 1.43 x x) 7)
 ; first column is x, second is y
 (define X '(-10.0 -7.7 -5.5 -3.3 -1.1 1.1 3.3 5.5 7.7 10.0))
 (define Y '(-5450.0 -2541.3 -909.1 -184.5 1.1 16.4 230.3 1011.3 2728.3 5750.0))
@@ -32,6 +33,7 @@
 (define architecture-mutation-probability 0.03)
 
 (define best-always-reproduce #t)
+(define best-count 2)
 
 ; number of iterations
 (define gp-iterations 1000)
@@ -210,7 +212,7 @@
 (define (get-random-program)
   (append (list (get-random-element functions))
    (let random-element ([program '()]
-                        [i (random min-sub-elements max-sub-elements)])
+                        [i (random min-sub-elements (add1 max-sub-elements))])
      (if (zero? i)
          program
          (if (<= (random) sub-probability)
@@ -486,6 +488,9 @@
                  new-offset
                  (append population-roulette (list (list program new-offset)))))))))
 
+(define (select-program-random-uniform program-fitness-pairs)
+  (car (list-ref program-fitness-pairs (random 0 (length program-fitness-pairs)))))
+
 (define (select-program-probabilistically program-fitness-pairs)
   (let ([population-roulette (get-population-roulette program-fitness-pairs)]
         [probability-point (random)])
@@ -521,13 +526,13 @@
                                  (list (list
                                         "Mutation"
                                         (lambda (program-fitness-pairs)
-                                         (mutate (select-program-probabilistically
+                                         (mutate (select-program-random-uniform
                                                   program-fitness-pairs))))
                                        mutation-probability)
                                  (list (list
                                         "Architecture mutation"
                                         (lambda (program-fitness-pairs)
-                                         (mutate-architecture (select-program-probabilistically
+                                         (mutate-architecture (select-program-random-uniform
                                                                program-fitness-pairs))))
                                        architecture-mutation-probability)))
 
@@ -536,13 +541,20 @@
     ;(displayln (car selected))
      (cadr selected)))
 
-(define (get-new-population program-fitness-pairs [best-always-reproduce best-always-reproduce])
-  (let f ([i (length program-fitness-pairs)]
-          [new-population '()])
-    (if (zero? i)
-        new-population
-        (f (sub1 i)
-           (append new-population (list ((get-random-genetic-operation) program-fitness-pairs)))))))
+(define (get-new-population program-fitness-pairs [best-always-reproduce best-always-reproduce] [best-count best-count])
+  (let* ([new-population-init (if best-always-reproduce
+                                  (map car (list-tail
+                                            (sort-population program-fitness-pairs)
+                                            (- (length program-fitness-pairs) best-count)))
+                                  '())])
+    (let f ([i (if best-always-reproduce
+                   (- (length program-fitness-pairs) best-count)
+                   (length program-fitness-pairs))]
+            [new-population new-population-init])
+      (if (zero? i)
+          new-population
+          (f (sub1 i)
+             (append new-population (list ((get-random-genetic-operation) program-fitness-pairs))))))))
 
 (define (genetic-programming input-data target iterations)
   (let* ([result-population 
