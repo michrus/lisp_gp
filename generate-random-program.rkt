@@ -497,6 +497,13 @@
             program
             (f (cdr pairs)))))))
 
+(define (select-two-programs-probabilistically program-fitness-pairs)
+  (let ([first (select-program-probabilistically program-fitness-pairs)]
+        [second (select-program-probabilistically program-fitness-pairs)])
+    (if (equal? first second)
+        (select-two-programs-probabilistically program-fitness-pairs)
+        (list first second))))
+
 (define foo (get-population))
 (define bar (get-population-fitness foo X))
 (define baz (sort-population (get-program-fitness-pairs foo bar)))
